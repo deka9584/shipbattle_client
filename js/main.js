@@ -4,18 +4,18 @@ const _app = {
 }
 
 _app.clearGameBoard = () => {
-    if (_app.yourShips) {
-        _app.yourShips.length = 0;
+    if (_app.shipList) {
+        _app.shipList.length = 0;
         _app.drawShips();
     }
 
-    if (_app.yourShots) {
-        _app.yourShots.length = 0;
+    if (_app.player?.shots) {
+        _app.player.shots.length = 0;
         _app.drawPlayerShots();
     }
 
-    if (_app.enemyShots) {
-        _app.enemyShots.length = 0;
+    if (_app.enemy?.shots) {
+        _app.enemy.shots.length = 0;
         _app.drawEnemyShots();
     }
 }
@@ -49,8 +49,8 @@ _app.drawShips = () => {
         _app.localGameBoard.removeChild(item);
     });
 
-    if (Array.isArray(_app.yourShips)) {
-        _app.yourShips.forEach(item => {
+    if (Array.isArray(_app.shipList)) {
+        _app.shipList.forEach(item => {
             const shipNode = _app.createShipNode(item.width, item.height, item.x, item.y);
             shipNode.classList.add("placed");
             _app.localGameBoard.prepend(shipNode);
@@ -65,8 +65,8 @@ _app.drawEnemyShots = () => {
         _app.localGameBoard.removeChild(item);
     });
 
-    if (Array.isArray(_app.enemyShots)) {
-        _app.enemyShots.forEach(item => {
+    if (Array.isArray(_app.enemy?.shots)) {
+        _app.enemy.shots.forEach(item => {
             const newShot = document.createElement("div");
             newShot.classList.add("shot");
             newShot.classList.add("enemy");
@@ -78,14 +78,14 @@ _app.drawEnemyShots = () => {
 }
 
 _app.drawPlayerShots = () => {
-    const shots = _app.remoteGameBoard.querySelectorAll(".shots.player");
+    const shots = _app.remoteGameBoard.querySelectorAll(".shot.player");
 
     shots.forEach(item => {
         _app.remoteGameBoard.removeChild(item);
     });
 
-    if (Array.isArray(_app.yourShots)) {
-        _app.yourShots.forEach(item => {
+    if (Array.isArray(_app.player?.shots)) {
+        _app.player.shots.forEach(item => {
             const newShot = document.createElement("div");
             newShot.classList.add("shot");
             newShot.classList.add("player");
@@ -117,10 +117,9 @@ _app.gameOver = (winner) => {
     console.log("Winner:", winner);
 }
 
-_app.hideShipCursor = () => {
-    if (_app.shipCursor) {
-        _app.shipCursor.classList.add("hidden");
-    }
+_app.getHitCount = (index) => {
+    const shots = _app.room?.players[index]?.shots;
+    return Array.isArray(shots) ? shots.filter(s => s.hit).length : 0;
 }
 
 _app.localGameBoard_clickHandler = (event) => {
@@ -133,26 +132,21 @@ _app.localGameBoard_clickHandler = (event) => {
 
 _app.localGameBoard_mouseoverHandler = (event) => {
     if (event.target.classList.contains("game-cell")) {
-        if (_app.isInGame && !_app.allShipsPlaced) {
-            const x = parseInt(event.target.dataset.x);
-            const y = parseInt(event.target.dataset.y);
-            _app.moveShipCursor(x, y);
-        }
-        else {
-            _app.hideShipCursor();
-        }
+        const x = parseInt(event.target.dataset.x);
+        const y = parseInt(event.target.dataset.y);
+        _app.moveShipCursor(x, y);
     }
 }
 
 _app.localGameBoard_mouseoutHandler = () => {
-    _app.hideShipCursor();
+    _app.shipCursor?.classList.add("hidden");
 }
 
 _app.moveShipCursor = (x, y) => {
     if (_app.shipCursor) {
         _app.shipCursor.style.setProperty("--pos-x", x);
         _app.shipCursor.style.setProperty("--pos-y", y);
-        _app.shipCursor.classList.remove("hidden");
+        _app.shipCursor.classList.toggle("hidden", !_app.isInGame || _app.player?.ready);
     }
 }
 
@@ -160,7 +154,7 @@ _app.moveShotPlaceholder = (x, y) => {
     if (_app.shotPlaceholder) {
         _app.shotPlaceholder.style.setProperty("--pos-x", x);
         _app.shotPlaceholder.style.setProperty("--pos-y", y);
-        _app.shotPlaceholder.classList.toggle("hidden", !_app.isInGame || !_app.allShipsPlaced);
+        _app.shotPlaceholder.classList.toggle("hidden", !_app.isInGame || !_app.gameReady);
     }
 }
 
@@ -219,6 +213,10 @@ _app.remoteGameBoard_mouseoverHandler = (event) => {
     }
 }
 
+_app.remoteGameBoard_mouseoutHandler = () => {
+    _app.shotPlaceholder?.classList.add("hidden");
+}
+
 _app.requestNewRoom = () => {
     if (_app.playerName) {
         _app.showJoinModal(false);
@@ -240,11 +238,12 @@ _app.sendShot = (x, y) => {
 }
 
 _app.sendToServer = (data) => {
-    if (_app.wsClient && _app.wsClient.readyState !== WebSocket.CLOSED) {
+    if ( _app.wsClient?.readyState === WebSocket.OPEN) {
         _app.wsClient.send(JSON.stringify(data));
     }
     else {
         console.error("Connection error:", _app.wsClient);
+        _app.showMessage("Connection lost", "You have lost connection to the server. Try to refresh the game.");
     }
 }
 
@@ -357,6 +356,7 @@ _app.startUp = () => {
         _app.drawGrid(_app.remoteGameBoard, _app.gridSize);
         _app.remoteGameBoard.addEventListener("click", _app.remoteGameBoard_clickHandler);
         _app.remoteGameBoard.addEventListener("mouseover", _app.remoteGameBoard_mouseoverHandler);
+        _app.remoteGameBoard.addEventListener("mouseout", _app.remoteGameBoard_mouseoutHandler);
     }
     
     _app.readQueryParameters();
@@ -381,8 +381,8 @@ _app.updateStatusDisplay = () => {
         if (_app.room) {
             const players = _app.room.players;
             const rid = `${_app.room.roomId}`;
-            const pl1 = players[0]?.name ? `Player 1: ${players[0].name}` : "<i>Waiting player 1</i>";
-            const pl2 = players[1]?.name ? `Player 2: ${players[1].name}` : "<i>Waiting player 2</i>";
+            const pl1 = players[0]?.name ? `Player 1: ${players[0].name} [${_app.getHitCount(0)}]` : "<i>Waiting player 1</i>";
+            const pl2 = players[1]?.name ? `Player 2: ${players[1].name} [${_app.getHitCount(1)}]` : "<i>Waiting player 2</i>";
             htmlOut += `<b>Room:</b> ${rid} - ${pl1} - ${pl2}`;
         }
         else {
@@ -401,17 +401,16 @@ _app.updateQueryParameters = (key, value) => {
 
 _app.updateRoom = (data) => {
     const nextShip = data.ship;
-    const playersReady = data.room.players[0]?.ready && data.room.players[1]?.ready;
     const firstPlayer = data.room.players[0].name === _app.playerName;
     
     _app.room = data.room;
-    _app.yourShips = data.yourShips;
-    _app.allShipsPlaced = data.allShipsPlaced;
+    _app.shipList = data.yourShips;
     _app.isYourTurn = data.isYourTurn;
-    _app.enemyShots = data.room.players[firstPlayer ? 1 : 0].shots;
-    _app.yourShots = data.room.players[firstPlayer ? 0 : 1].shots;
+    _app.player = data.room.players[firstPlayer ? 0 : 1];
+    _app.enemy = data.room.players[firstPlayer ? 1 : 0];
+    _app.gameReady = _app.player?.ready && _app.enemy?.ready;
     
-    _app.remoteGameBoard.classList.toggle("disabled", !playersReady || !_app.isYourTurn);
+    _app.remoteGameBoard.classList.toggle("disabled", !_app.gameReady || !_app.isYourTurn);
     
     _app.newShipCursor(nextShip.width, nextShip.height);
     _app.drawShips();
