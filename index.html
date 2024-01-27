@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ship Battle</title>
+    <link rel="stylesheet" href="./css./style.css">
+</head>
+<body>
+    <dialog class="dialog">
+        <h2>Message</h2>
+        <p>Test message</p>
+        <button class="close-btn">Chiudi</button>
+    </dialog>
+
+    <div class="join-modal hidden">
+        <h1>Ship Battle</h1>
+        <h2>Easyy blyad</h2>
+
+        <form action="#">
+            <label for="playerName">Nickname</label>
+            <input type="text" name="playerName" placeholder="Insert your nickname" required>
+            <label for="roomId">Room ID</label>
+            <input type="text" name="roomId" placeholder="Insert room id">
+            <button type="submit">Join room</button>
+            <button type="button" class="newroom-btn">Create new room</button>
+        </form>
+        <p class="message"></p>
+    </div>
+
+    <div class="status-bar">
+        <div class="game-status"></div>
+        <button class="signout-btn" disabled>Sign out</button>
+    </div>
+
+    <div class="board-container">
+        <div class="game-board local-board"></div>
+        <div class="disabled game-board remote-board">
+            <div class="hidden shot" data-placeholder></div>
+        </div>
+    </div>
+
+    <script src="./js/main.js"></script>
+</body>
+</html>

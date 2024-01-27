@@ -1,0 +1,190 @@
+:root {
+    --board-color: rgb(151, 255, 255);
+    --board-width: 45vw;
+    --grid-size: 10;
+    --cell-size: calc(var(--board-width) / var(--grid-size));
+}
+
+* {
+    box-sizing: inherit;
+}
+
+body {
+    margin: 0;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    box-sizing: border-box;
+}
+
+.board-container {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-around;
+}
+
+.dialog {
+    background-color: wheat;
+    border-radius: .5em;
+    inset: 0;
+    max-width: 90vw;
+    overflow: hidden;
+    padding: 0 0 1em 0;
+    position: fixed;
+    width: 300px;
+    z-index: 11;
+}
+
+.dialog::before {
+    background-color: rgba(255, 255, 255, .6);
+    content: "";
+    inset: 0;
+    position: fixed;
+    z-index: -1;
+}
+
+.dialog h2 {
+    background-color: var(--board-color);
+    border-bottom: 1px solid black;
+    margin-top: 0;
+    padding: 1rem 1.5rem;
+}
+
+.dialog p {
+    padding: 0 1.5em;
+}
+
+.dialog .close-btn {
+    background-color: var(--board-color);
+    border: 1px solid black;
+    border-radius: .5rem;
+    display: block;
+    margin: auto;
+    padding: .25rem .5rem;
+    cursor: pointer;
+}
+
+.disabled {
+    opacity: .5;
+    pointer-events: none;
+}
+
+.game-board {
+    background-color: var(--board-color);
+    border: 1px solid gray;
+    display: inline-grid;
+    grid-template-columns: repeat(var(--grid-size), var(--cell-size));
+    width: var(--board-width);
+}
+
+.game-board,
+.game-board * {
+    position: relative;
+}
+
+.game-cell {
+    aspect-ratio: 1;
+    border: 1px solid gray;
+}
+
+.join-modal {
+    background-color: rgb(60, 60, 60);
+    border-radius: 1rem;
+    color: white;
+    left: 50%;
+    max-width: 90vw;
+    padding: .5rem 2rem;
+    position: fixed;
+    text-align: center;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    z-index: 10;
+}
+
+.join-modal form {
+    display: flex;
+    flex-flow: column nowrap;
+    gap: .5rem;
+    padding-bottom: 1rem;
+    text-align: start;
+}
+
+.join-modal label {
+    font-size: .75rem;
+}
+
+.join-modal button {
+    background-color: greenyellow;
+    border: 0;
+    border-radius: .5rem;
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+.join-modal .message {
+    color: red;
+}
+
+.hidden {
+    display: none;
+}
+
+.ship {
+    --height: 1;
+    --pos-x: 0;
+    --pos-y: 0;
+    --width: 1;
+    background-color: fuchsia;
+    height: calc(var(--cell-size) * var(--height));
+    left: calc(var(--cell-size) * var(--pos-x));
+    position: absolute;
+    top: calc(var(--cell-size) * var(--pos-y));
+    width: calc(var(--cell-size) * var(--width));
+}
+
+.ship.placed {
+    background-color: coral;
+}
+
+.shot {
+    --pos-x: 0;
+    --pos-y: 0;
+    background-color: rgb(69, 69, 69);
+    border-radius: 50%;
+    height: calc(var(--cell-size) * .8);
+    left: calc(var(--cell-size) * var(--pos-x));
+    margin: calc(var(--cell-size) * .1);
+    pointer-events: none;
+    position: absolute;
+    top: calc(var(--cell-size) * var(--pos-y));
+    width: calc(var(--cell-size) * .8);
+    z-index: 9;
+}
+
+.shot.hit {
+    background-color: rgba(255, 0, 0, .6);
+}
+
+.status-bar {
+    background-color: rgb(40, 40, 40);
+    color: white;
+    display: flex;
+    flex-flow: row wrap;
+    margin-bottom: 0.5rem;
+    padding: .5rem;
+    position: relative;
+}
+
+.status-bar .game-status {
+    flex: 1;
+}
+
+.status-bar .signout-btn {
+    background-color: transparent;
+    border: 0;
+    color: white;
+    cursor: pointer;
+}
+
+.status-bar .signout-btn[disabled] {
+    display: none;
+}
