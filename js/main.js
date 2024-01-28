@@ -1,7 +1,7 @@
 const _app = {
-    gridSize: 10,
     serverAddress: "ws://127.0.0.1:8086",
-}
+    gridSize: 10,
+};
 
 _app.clearGameBoard = () => {
     if (_app.shipList) {
@@ -31,6 +31,9 @@ _app.createShipNode = (width, height, x, y) => {
 }
 
 _app.drawGrid = (container, size = 10) => {
+    const gameCells = container.querySelectorAll(".game-cell");
+    gameCells.forEach(item => container.removeChild(item));
+
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
             const newCell = document.createElement("div");
@@ -44,10 +47,7 @@ _app.drawGrid = (container, size = 10) => {
 
 _app.drawShips = () => {
     const ships = _app.localGameBoard.querySelectorAll(".ship.placed");
-    
-    ships.forEach(item => {
-        _app.localGameBoard.removeChild(item);
-    });
+    ships.forEach(item => _app.localGameBoard.removeChild(item));
 
     if (Array.isArray(_app.shipList)) {
         _app.shipList.forEach(item => {
@@ -59,11 +59,8 @@ _app.drawShips = () => {
 }
 
 _app.drawEnemyShots = () => {
-    const shots = _app.localGameBoard.querySelectorAll(".shots.enemy");
-
-    shots.forEach(item => {
-        _app.localGameBoard.removeChild(item);
-    });
+    const shots = _app.localGameBoard.querySelectorAll(".shot.enemy");
+    shots.forEach(item => _app.localGameBoard.removeChild(item));
 
     if (Array.isArray(_app.enemy?.shots)) {
         _app.enemy.shots.forEach(item => {
@@ -79,10 +76,7 @@ _app.drawEnemyShots = () => {
 
 _app.drawPlayerShots = () => {
     const shots = _app.remoteGameBoard.querySelectorAll(".shot.player");
-
-    shots.forEach(item => {
-        _app.remoteGameBoard.removeChild(item);
-    });
+    shots.forEach(item => _app.remoteGameBoard.removeChild(item));
 
     if (Array.isArray(_app.player?.shots)) {
         _app.player.shots.forEach(item => {
@@ -238,7 +232,7 @@ _app.sendShot = (x, y) => {
 }
 
 _app.sendToServer = (data) => {
-    if ( _app.wsClient?.readyState === WebSocket.OPEN) {
+    if (_app.wsClient?.readyState === WebSocket.OPEN) {
         _app.wsClient.send(JSON.stringify(data));
     }
     else {
@@ -258,7 +252,6 @@ _app.setupJoinModal = () => {
     if (_app.joinModal) {
         const joinForm = _app.joinModal.querySelector("form");
         const newRoomBtn = _app.joinModal.querySelector(".newroom-btn");
-        _app.joinMessage = _app.joinModal.querySelector(".message");
 
         if (joinForm.roomId && _app.queryRoomId) {
             joinForm.roomId.value = _app.queryRoomId;
@@ -282,23 +275,9 @@ _app.setupJoinModal = () => {
     }
 }
 
-_app.showJoinModal = (show = true, message) => {
+_app.showJoinModal = (show = true) => {
     if (_app.joinModal) {
-        if (show) {
-            _app.joinModal.classList.remove("hidden");
-
-            if (_app.joinMessage) {
-                _app.joinMessage.innerText = message ?? "";
-                _app.joinMessage.classList.toggle("hidden", !message);
-            }
-        }
-        else {
-            _app.joinModal.classList.add("hidden");
-            
-            if (_app.joinMessage) {
-                _app.joinMessage.classList.add("hidden");
-            }
-        }
+        _app.joinModal.classList.toggle("hidden", !show);
     }
 }
 
@@ -381,9 +360,15 @@ _app.updateStatusDisplay = () => {
         if (_app.room) {
             const players = _app.room.players;
             const rid = `${_app.room.roomId}`;
-            const pl1 = players[0]?.name ? `Player 1: ${players[0].name} [${_app.getHitCount(0)}]` : "<i>Waiting player 1</i>";
-            const pl2 = players[1]?.name ? `Player 2: ${players[1].name} [${_app.getHitCount(1)}]` : "<i>Waiting player 2</i>";
-            htmlOut += `<b>Room:</b> ${rid} - ${pl1} - ${pl2}`;
+            const hc1 = `[<span class="hit-count">${_app.getHitCount(0)}</span>]`;
+            const hc2 = `[<span class="hit-count">${_app.getHitCount(1)}</span>]`;
+            const pl1 = players[0]?.name ? `${players[0].name} ${hc1}` : `<i class="waiting">Waiting</i>`;
+            const pl2 = players[1]?.name ? `${players[1].name} ${hc2}` : `<i class="waiting">Waiting</i>`;
+            htmlOut += `
+                <b>Room:</b> <span class="room-id">${rid}</span> - 
+                Player 1: <span class="player">${pl1}</span> -
+                Player 2: <span class="player">${pl2}</span>
+            `;
         }
         else {
             htmlOut += "<b>Ship Battle:</b> Enter a room code or create a new room to play";
@@ -402,6 +387,7 @@ _app.updateQueryParameters = (key, value) => {
 _app.updateRoom = (data) => {
     const nextShip = data.ship;
     const firstPlayer = data.room.players[0].name === _app.playerName;
+    const roomGridSize = data.room.gridSize;
     
     _app.room = data.room;
     _app.shipList = data.yourShips;
@@ -409,6 +395,13 @@ _app.updateRoom = (data) => {
     _app.player = data.room.players[firstPlayer ? 0 : 1];
     _app.enemy = data.room.players[firstPlayer ? 1 : 0];
     _app.gameReady = _app.player?.ready && _app.enemy?.ready;
+
+    if (roomGridSize != _app.gridSize) {
+        _app.gridSize = roomGridSize;
+        document.documentElement.style.setProperty('--grid-size', _app.gridSize);
+        _app.drawGrid(_app.localGameBoard, _app.gridSize);
+        _app.drawGrid(_app.remoteGameBoard, _app.gridSize);
+    }
     
     _app.remoteGameBoard.classList.toggle("disabled", !_app.gameReady || !_app.isYourTurn);
     

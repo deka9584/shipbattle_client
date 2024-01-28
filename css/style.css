@@ -29,7 +29,7 @@ body {
     overflow: hidden;
     padding: 0 0 1em 0;
     position: fixed;
-    width: 300px;
+    width: 400px;
     z-index: 11;
 }
 
@@ -120,10 +120,6 @@ body {
     cursor: pointer;
 }
 
-.join-modal .message {
-    color: red;
-}
-
 .hidden {
     display: none;
 }
@@ -178,6 +174,18 @@ body {
     flex: 1;
 }
 
+.status-bar .hit-count {
+    color: orange;
+}
+
+.status-bar .room-id {
+    color: greenyellow;
+}
+
+.status-bar .player {
+    color: var(--board-color);
+}
+
 .status-bar .signout-btn {
     background-color: transparent;
     border: 0;
@@ -187,4 +195,8 @@ body {
 
 .status-bar .signout-btn[disabled] {
     display: none;
+}
+
+.status-bar .waiting {
+    color: orange;
 }
