@@ -91,18 +91,6 @@ _app.drawPlayerShots = () => {
     }
 }
 
-_app.enterRoom = (roomId) => {
-    if (_app.playerName && roomId) {
-        _app.showJoinModal(false);
-        _app.sendToServer({
-            type: "enter-room",
-            playerName: _app.playerName,
-            roomId,
-        });
-        _app.updateQueryParameters("room", roomId);
-    }
-}
-
 _app.gameOver = (winner) => {
     const youWin = winner === _app.playerName;
     const message = youWin ? "You win the Battle!" : "You lost the Battle... Try again.";
@@ -114,6 +102,23 @@ _app.gameOver = (winner) => {
 _app.getHitCount = (index) => {
     const shots = _app.room?.players[index]?.shots;
     return Array.isArray(shots) ? shots.filter(s => s.hit).length : 0;
+}
+
+_app.join = (roomId) => {
+    if (_app.playerName && roomId) {
+        _app.showJoinModal(false);
+        _app.sendToServer({
+            type: "enter-room",
+            playerName: _app.playerName,
+            roomId,
+        });
+        _app.updateQueryParameters("room", roomId);
+    }
+}
+
+_app.leave = () => {
+    _app.signoutBtn.disabled = true;
+    _app.sendToServer({ type: "quit-room" });
 }
 
 _app.localGameBoard_clickHandler = (event) => {
@@ -164,19 +169,23 @@ _app.newShipCursor = (width, height) => {
     _app.localGameBoard.prepend(_app.shipCursor);
 }
 
-_app.placeShip = (x, y) => {
-    if (_app.isInGame && _app.room) {
+_app.newRoom = () => {
+    if (_app.playerName) {
+        _app.showJoinModal(false);
         _app.sendToServer({
-            type: "place-ship",
-            roomId: _app.room.roomId,
-            pos: {x, y},
+            type: "create-room",
+            playerName: _app.playerName,
         });
     }
 }
 
-_app.quitRoom = () => {
-    _app.signoutBtn.disabled = true;
-    _app.sendToServer({ type: "quit-room" });
+_app.placeShip = (x, y) => {
+    if (_app.isInGame && _app.room) {
+        _app.sendToServer({
+            type: "place-ship",
+            pos: {x, y},
+        });
+    }
 }
 
 _app.readQueryParameters = () => {
@@ -211,21 +220,10 @@ _app.remoteGameBoard_mouseoutHandler = () => {
     _app.shotPlaceholder?.classList.add("hidden");
 }
 
-_app.requestNewRoom = () => {
-    if (_app.playerName) {
-        _app.showJoinModal(false);
-        _app.sendToServer({
-            type: "create-room",
-            playerName: _app.playerName,
-        });
-    }
-}
-
 _app.sendShot = (x, y) => {
     if (_app.isInGame && _app.room) {
         _app.sendToServer({
             type: "add-shot",
-            roomId: _app.room.roomId,
             pos: {x, y},
         });
     }
@@ -262,14 +260,14 @@ _app.setupJoinModal = () => {
 
             if (joinForm.playerName && joinForm.roomId) {
                 _app.playerName = joinForm.playerName.value;
-                _app.enterRoom(joinForm.roomId.value);
+                _app.join(joinForm.roomId.value);
             }
         });
 
         newRoomBtn?.addEventListener("click", () => {
             if (joinForm.playerName) {
                 _app.playerName = joinForm.playerName.value;
-                _app.requestNewRoom();
+                _app.newRoom();
             }
         });
     }
@@ -304,7 +302,7 @@ _app.showMessage = (title, message) => {
 
 _app.signoutBtn_clickHandler = () => {
     if (_app.isInGame && !_app.signoutBtn.disabled) {
-        _app.quitRoom();
+        _app.leave();
     }
 }
 
@@ -412,7 +410,7 @@ _app.updateRoom = (data) => {
     _app.updateStatusDisplay();
 
     if (data.room.gameOver) {
-        _app.quitRoom();
+        _app.leave();
     }
 }
 
@@ -424,7 +422,7 @@ _app.wsClient_messageHandler = (event) => {
             _app.gameOver(messageData.winner);
             break;
         case "room-created":
-            _app.enterRoom(messageData.roomId);
+            _app.join(messageData.roomId);
             break;
         case "room-error":
             _app.showJoinModal(true);
