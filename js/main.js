@@ -224,7 +224,7 @@ _app.sendShot = (x, y) => {
     if (_app.isInGame && _app.room) {
         _app.sendToServer({
             type: "add-shot",
-            pos: {x, y},
+            pos: { x, y },
         });
     }
 }
