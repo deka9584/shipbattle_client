@@ -195,8 +195,8 @@ _app.readQueryParameters = () => {
         _app.queryRoomId = urlParams.get("room");
     }
 
-    if (urlParams.has("uid")) {
-        _app.queryUserId = urlParams.get("uid");
+    if (urlParams.has("chatId")) {
+        _app.queryChatId = urlParams.get("chatId");
     }
 }
 

@@ -10,9 +10,9 @@
 }
 
 body {
-    margin: 0;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
     box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    margin: 0;
 }
 
 .board-container {
@@ -56,10 +56,10 @@ body {
     background-color: var(--board-color);
     border: 1px solid black;
     border-radius: .5rem;
+    cursor: pointer;
     display: block;
     margin: auto;
     padding: .25rem .5rem;
-    cursor: pointer;
 }
 
 .disabled {
@@ -116,8 +116,8 @@ body {
     background-color: greenyellow;
     border: 0;
     border-radius: .5rem;
-    padding: 0.25rem;
     cursor: pointer;
+    padding: 0.25rem;
 }
 
 .hidden {
