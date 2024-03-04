@@ -1,5 +1,5 @@
 const _app = {
-    serverAddress: "ws://127.0.0.1:8086",
+    serverAddress: "ws://185.229.236.222:8086",
     gridSize: 10,
 };
 
@@ -31,8 +31,8 @@ _app.createShipNode = (width, height, x, y) => {
 }
 
 _app.drawGrid = (container, size = 10) => {
-    const gameCells = container.querySelectorAll(".game-cell");
-    gameCells.forEach(item => container.removeChild(item));
+    const placedCells = container.querySelectorAll(".game-cell");
+    placedCells.forEach(item => container.removeChild(item));
 
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
@@ -46,8 +46,8 @@ _app.drawGrid = (container, size = 10) => {
 }
 
 _app.drawShips = () => {
-    const ships = _app.localGameBoard.querySelectorAll(".ship.placed");
-    ships.forEach(item => _app.localGameBoard.removeChild(item));
+    const placedShips = _app.localGameBoard.querySelectorAll(".ship.placed");
+    placedShips.forEach(item => _app.localGameBoard.removeChild(item));
 
     if (Array.isArray(_app.shipList)) {
         _app.shipList.forEach(item => {
