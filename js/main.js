@@ -70,7 +70,7 @@ _app.drawEnemyShots = () => {
             newShot.style.setProperty("--pos-x", item.x);
             newShot.style.setProperty("--pos-y", item.y);
             _app.localGameBoard.appendChild(newShot);
-        })
+        });
     }
 }
 
@@ -117,8 +117,11 @@ _app.join = (roomId) => {
 }
 
 _app.leave = () => {
-    _app.signoutBtn.disabled = true;
     _app.sendToServer({ type: "quit-room" });
+
+    if (_app.signoutBtn) {
+        _app.signoutBtn.disabled = true;
+    }
 }
 
 _app.localGameBoard_clickHandler = (event) => {
@@ -183,7 +186,7 @@ _app.placeShip = (x, y) => {
     if (_app.isInGame && _app.room) {
         _app.sendToServer({
             type: "place-ship",
-            pos: {x, y},
+            pos: { x, y },
         });
     }
 }
@@ -230,13 +233,15 @@ _app.sendShot = (x, y) => {
 }
 
 _app.sendToServer = (data) => {
-    if (_app.wsClient?.readyState === WebSocket.OPEN) {
-        _app.wsClient.send(JSON.stringify(data));
-    }
-    else {
+    if (!_app.wsClient || _app.wsClient.readyState !== WebSocket.OPEN) {
         console.error("Connection error:", _app.wsClient);
         _app.showMessage("Connection lost", "You have lost connection to the server. Try to refresh the game.");
+        _app.stopGame();
+        _app.setupWSS();
+        return;
     }
+
+    _app.wsClient.send(JSON.stringify(data));
 }
 
 _app.setupWSS = () => {
@@ -251,25 +256,30 @@ _app.setupJoinModal = () => {
         const joinForm = _app.joinModal.querySelector("form");
         const newRoomBtn = _app.joinModal.querySelector(".newroom-btn");
 
-        if (joinForm.roomId && _app.queryRoomId) {
-            joinForm.roomId.value = _app.queryRoomId;
+        if (joinForm && newRoomBtn) {
+            const roomIdField = joinForm.elements["roomId"];
+            const playerNameField = joinForm.elements["playerName"];
+
+            if (roomIdField && _app.queryRoomId) {
+                roomIdField.value = _app.queryRoomId;
+            }
+
+            joinForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+
+                if (playerNameField && roomIdField) {
+                    _app.playerName = playerNameField.value;
+                    _app.join(roomIdField.value);
+                }
+            });
+
+            newRoomBtn.addEventListener("click", () => {
+                if (playerNameField) {
+                    _app.playerName = playerNameField.value;
+                    _app.newRoom();
+                }
+            });
         }
-
-        joinForm?.addEventListener("submit", (event) => {
-            event.preventDefault();
-
-            if (joinForm.playerName && joinForm.roomId) {
-                _app.playerName = joinForm.playerName.value;
-                _app.join(joinForm.roomId.value);
-            }
-        });
-
-        newRoomBtn?.addEventListener("click", () => {
-            if (joinForm.playerName) {
-                _app.playerName = joinForm.playerName.value;
-                _app.newRoom();
-            }
-        });
     }
 }
 
@@ -296,8 +306,6 @@ _app.showMessage = (title, message) => {
         closeBtn?.addEventListener("click", () => _app.dialogModal.close(), { once: true });
         _app.dialogModal.show();
     }
-
-    console.log(title, message);
 }
 
 _app.signoutBtn_clickHandler = () => {
@@ -308,7 +316,10 @@ _app.signoutBtn_clickHandler = () => {
 
 _app.startGame = () => {
     _app.isInGame = true;
-    _app.signoutBtn.disabled = false;
+
+    if (_app.signoutBtn) {
+        _app.signoutBtn.disabled = false;
+    }
 }
 
 _app.startUp = () => {
