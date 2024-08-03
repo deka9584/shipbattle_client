@@ -1,5 +1,6 @@
 const _app = {
-    serverAddress: "ws://185.229.236.222:8086",
+    // serverAddress: "ws://185.229.236.222:8086",
+    serverAddress: "ws://127.0.0.1:8086",
     gridSize: 10,
 };
 
@@ -22,11 +23,13 @@ _app.clearGameBoard = () => {
 
 _app.createShipNode = (width, height, x, y) => {
     const shipNode = document.createElement("div");
+
     shipNode.classList.add("ship");
     shipNode.style.setProperty("--height", height);
     shipNode.style.setProperty("--width", width);
     shipNode.style.setProperty("--pos-x", x);
     shipNode.style.setProperty("--pos-y", y);
+
     return shipNode;
 }
 
@@ -118,10 +121,7 @@ _app.join = (roomId) => {
 
 _app.leave = () => {
     _app.sendToServer({ type: "quit-room" });
-
-    if (_app.signoutBtn) {
-        _app.signoutBtn.disabled = true;
-    }
+    _app.setSignoutBtnDisabled(true);
 }
 
 _app.localGameBoard_clickHandler = (event) => {
@@ -244,6 +244,13 @@ _app.sendToServer = (data) => {
     _app.wsClient.send(JSON.stringify(data));
 }
 
+_app.setSignoutBtnDisabled = (disabled) => {
+    if (_app.signoutBtn) {
+        _app.signoutBtn.disabled = disabled;
+        _app.signoutBtn.classList.toggle("hidden", disabled);
+    }
+}
+
 _app.setupWSS = () => {
     if (_app.serverAddress) {
         _app.wsClient = new WebSocket(_app.serverAddress);
@@ -309,17 +316,14 @@ _app.showMessage = (title, message) => {
 }
 
 _app.signoutBtn_clickHandler = () => {
-    if (_app.isInGame && !_app.signoutBtn.disabled) {
+    if (_app.isInGame) {
         _app.leave();
     }
 }
 
 _app.startGame = () => {
     _app.isInGame = true;
-
-    if (_app.signoutBtn) {
-        _app.signoutBtn.disabled = false;
-    }
+    _app.setSignoutBtnDisabled(false);
 }
 
 _app.startUp = () => {
@@ -357,7 +361,7 @@ _app.startUp = () => {
 _app.stopGame = () => {
     _app.room = null;
     _app.isInGame = false;
-    _app.signoutBtn.disabled = true;
+    _app.setSignoutBtnDisabled(true);
     _app.showJoinModal(true);
     _app.updateStatusDisplay();
 }

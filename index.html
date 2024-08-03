@@ -14,13 +14,13 @@
     </dialog>
 
     <div class="join-modal hidden">
-        <h1>Ship Battle</h1>
+        <h2 class="join-title">Ship Battle</h2>
 
         <form action="#">
             <label for="playerName">Nickname</label>
-            <input type="text" name="playerName" placeholder="Insert your nickname" required>
+            <input type="text" id="playerName" name="playerName" placeholder="Insert your nickname" required>
             <label for="roomId">Room ID</label>
-            <input type="text" name="roomId" placeholder="Insert room id">
+            <input type="text" id="roomId" name="roomId" placeholder="Insert room id">
             <button type="submit">Join room</button>
             <button type="button" class="newroom-btn">Create new room</button>
         </form>
@@ -28,7 +28,7 @@
 
     <div class="status-bar">
         <div class="game-status"></div>
-        <button class="signout-btn" disabled>Sign out</button>
+        <button class="signout-btn hidden" disabled>Sign out</button>
     </div>
 
     <div class="board-container">

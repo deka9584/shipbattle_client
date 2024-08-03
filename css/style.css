@@ -5,14 +5,18 @@
     --cell-size: calc(var(--board-width) / var(--grid-size));
 }
 
-* {
+*,
+*::before,
+*::after {
     box-sizing: inherit;
+    margin: 0;
+    padding: 0;
 }
 
 body {
     box-sizing: border-box;
+    cursor: default;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
-    margin: 0;
 }
 
 .board-container {
@@ -25,6 +29,7 @@ body {
     background-color: wheat;
     border-radius: .5em;
     inset: 0;
+    margin: auto;
     max-width: 90vw;
     overflow: hidden;
     padding: 0 0 1em 0;
@@ -44,12 +49,12 @@ body {
 .dialog h2 {
     background-color: var(--board-color);
     border-bottom: 1px solid black;
-    margin-top: 0;
+    margin-bottom: .25rem;
     padding: 1rem 1.5rem;
 }
 
 .dialog p {
-    padding: 0 1.5em;
+    padding: 1rem 1.5em;
 }
 
 .dialog .close-btn {
@@ -91,7 +96,7 @@ body {
     color: white;
     left: 50%;
     max-width: 90vw;
-    padding: .5rem 2rem;
+    padding: 1.5rem 2rem;
     position: fixed;
     text-align: center;
     top: 50%;
@@ -104,12 +109,16 @@ body {
     display: flex;
     flex-flow: column nowrap;
     gap: .5rem;
-    padding-bottom: 1rem;
     text-align: start;
 }
 
 .join-modal label {
+    cursor: pointer;
     font-size: .75rem;
+}
+
+.join-modal input {
+    padding: 1px 2px;
 }
 
 .join-modal button {
@@ -118,6 +127,11 @@ body {
     border-radius: .5rem;
     cursor: pointer;
     padding: 0.25rem;
+}
+
+.join-title {
+    font-size: 2em;
+    margin-bottom: 1.25rem;
 }
 
 .hidden {
@@ -191,10 +205,7 @@ body {
     border: 0;
     color: white;
     cursor: pointer;
-}
-
-.status-bar .signout-btn[disabled] {
-    display: none;
+    padding: 0 6px;
 }
 
 .status-bar .waiting {
