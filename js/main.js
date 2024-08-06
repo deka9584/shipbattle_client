@@ -103,7 +103,16 @@ _app.getHitCount = (index) => {
     return Array.isArray(shots) ? shots.filter(s => s.hit).length : 0;
 }
 
-_app.join = (roomId) => {
+_app.joinNewRoom = () => {
+    if (_app.playerName) {
+        _app.sendToServer({
+            type: "create-room",
+            playerName: _app.playerName,
+        });
+    }
+}
+
+_app.joinRoom = (roomId) => {
     if (_app.playerName && roomId) {
         _app.sendToServer({
             type: "enter-room",
@@ -114,12 +123,6 @@ _app.join = (roomId) => {
         _app.updateQueryParameters("room", roomId);
         _app.updateQueryParameters("server", _app.serverAddress);
     }
-}
-
-_app.handleConnectionError = () => {
-    console.error("Connection error:", _app.wsClient);
-    _app.showMessage("Connection lost", "You have lost connection to the server. Try to refresh the game.");
-    _app.stopGame();
 }
 
 _app.leave = () => {
@@ -163,6 +166,22 @@ _app.moveShotPlaceholder = (x, y) => {
     }
 }
 
+_app.newGame = (serverAddress, playerName, roomId = null) => {
+    const ws = _app.setupWSS(serverAddress);
+
+    _app.showJoinModal(false);
+    _app.playerName = playerName;
+
+    ws.addEventListener("open", () => {
+        if (roomId) {
+            _app.joinRoom(roomId);
+            return;
+        }
+
+        _app.joinNewRoom();
+    });
+}
+
 _app.newShipCursor = (width, height) => {
     const shipNode = _app.createShipNode(width, height, 0, 0);
     shipNode.classList.add("hidden");
@@ -173,15 +192,6 @@ _app.newShipCursor = (width, height) => {
 
     _app.shipCursor = shipNode;
     _app.localGameBoard.prepend(_app.shipCursor);
-}
-
-_app.newRoom = () => {
-    if (_app.playerName) {
-        _app.sendToServer({
-            type: "create-room",
-            playerName: _app.playerName,
-        });
-    }
 }
 
 _app.placeShip = (x, y) => {
@@ -240,11 +250,16 @@ _app.sendShot = (x, y) => {
 
 _app.sendToServer = (data) => {
     if (!_app.wsClient || _app.wsClient.readyState !== WebSocket.OPEN) {
-        _app.handleConnectionError();
-        return;
+        _app.showMessage("Connection lost", `You have lost connection to the server`);
+        _app.stopGame();
     }
 
-    _app.wsClient.send(JSON.stringify(data));
+    try {
+        _app.wsClient.send(JSON.stringify(data));
+    }
+    catch (error) {
+        console.error("Unable to send data to server:", error);
+    }
 }
 
 _app.setSignoutBtnDisabled = (disabled) => {
@@ -257,11 +272,12 @@ _app.setSignoutBtnDisabled = (disabled) => {
 _app.setupWSS = (serverAddress) => {
     const ws = new WebSocket(serverAddress);
 
+    ws.addEventListener("error", _app.wsClient_errorHandler);
     ws.addEventListener("message", _app.wsClient_messageHandler);
-    ws.addEventListener("error", _app.handleConnectionError);
 
     _app.wsClient = ws;
     _app.serverAddress = ws.url;
+    
     return ws;
 }
 
@@ -286,26 +302,14 @@ _app.setupJoinModal = () => {
             joinForm.addEventListener("submit", (event) => {
                 event.preventDefault();
 
-                if (serverField && playerNameField && roomIdField) {
-                    const ws = _app.setupWSS(serverField.value);
-                    _app.showJoinModal(false);
-                    _app.playerName = playerNameField.value;
-
-                    ws.addEventListener("open", () => {
-                        _app.join(roomIdField.value);
-                    });
+                if (serverField && serverField.value.trim() !== "" && playerNameField && playerNameField.value.trim() !== "" && roomIdField) {
+                    _app.newGame(serverField.value, playerNameField.value, roomIdField.value);
                 }
             });
 
             newRoomBtn.addEventListener("click", () => {
-                if (serverField && playerNameField) {
-                    const ws = _app.setupWSS(serverField.value);
-                    _app.showJoinModal(false);
-                    _app.playerName = playerNameField.value;
-
-                    ws.addEventListener("open", () => {
-                        _app.newRoom();
-                    });
+                if (serverField && serverField.value.trim() !== "" && playerNameField) {
+                    _app.newGame(serverField.value, playerNameField.value, null);
                 }
             });
         }
@@ -450,6 +454,11 @@ _app.updateRoom = (data) => {
     }
 }
 
+_app.wsClient_errorHandler = (error) => {
+    _app.showMessage("Connection error", `Error connecting to: ${_app.serverAddress}`);
+    _app.stopGame();
+}
+
 _app.wsClient_messageHandler = (event) => {
     const messageData = JSON.parse(event.data);
 
@@ -458,7 +467,7 @@ _app.wsClient_messageHandler = (event) => {
             _app.gameOver(messageData.winner);
             break;
         case "room-created":
-            _app.join(messageData.roomId);
+            _app.joinRoom(messageData.roomId);
             break;
         case "room-error":
             _app.showJoinModal(true);
