@@ -1,8 +1,4 @@
-const _app = {
-    // serverAddress: "ws://185.229.236.222:8086",
-    serverAddress: "ws://127.0.0.1:8086",
-    gridSize: 10,
-};
+const _app = {};
 
 _app.clearGameBoard = () => {
     if (_app.shipList) {
@@ -109,14 +105,21 @@ _app.getHitCount = (index) => {
 
 _app.join = (roomId) => {
     if (_app.playerName && roomId) {
-        _app.showJoinModal(false);
         _app.sendToServer({
             type: "enter-room",
             playerName: _app.playerName,
             roomId,
         });
+        
         _app.updateQueryParameters("room", roomId);
+        _app.updateQueryParameters("server", _app.serverAddress);
     }
+}
+
+_app.handleConnectionError = () => {
+    console.error("Connection error:", _app.wsClient);
+    _app.showMessage("Connection lost", "You have lost connection to the server. Try to refresh the game.");
+    _app.stopGame();
 }
 
 _app.leave = () => {
@@ -174,7 +177,6 @@ _app.newShipCursor = (width, height) => {
 
 _app.newRoom = () => {
     if (_app.playerName) {
-        _app.showJoinModal(false);
         _app.sendToServer({
             type: "create-room",
             playerName: _app.playerName,
@@ -193,6 +195,10 @@ _app.placeShip = (x, y) => {
 
 _app.readQueryParameters = () => {
     const urlParams = new URLSearchParams(document.location.search);
+
+    if (urlParams.has("server")) {
+        _app.serverAddress = urlParams.get("server");
+    }
 
     if (urlParams.has("room")) {
         _app.queryRoomId = urlParams.get("room");
@@ -234,10 +240,7 @@ _app.sendShot = (x, y) => {
 
 _app.sendToServer = (data) => {
     if (!_app.wsClient || _app.wsClient.readyState !== WebSocket.OPEN) {
-        console.error("Connection error:", _app.wsClient);
-        _app.showMessage("Connection lost", "You have lost connection to the server. Try to refresh the game.");
-        _app.stopGame();
-        _app.setupWSS();
+        _app.handleConnectionError();
         return;
     }
 
@@ -251,11 +254,15 @@ _app.setSignoutBtnDisabled = (disabled) => {
     }
 }
 
-_app.setupWSS = () => {
-    if (_app.serverAddress) {
-        _app.wsClient = new WebSocket(_app.serverAddress);
-        _app.wsClient.addEventListener("message", _app.wsClient_messageHandler);
-    }
+_app.setupWSS = (serverAddress) => {
+    const ws = new WebSocket(serverAddress);
+
+    ws.addEventListener("message", _app.wsClient_messageHandler);
+    ws.addEventListener("error", _app.handleConnectionError);
+
+    _app.wsClient = ws;
+    _app.serverAddress = ws.url;
+    return ws;
 }
 
 _app.setupJoinModal = () => {
@@ -264,8 +271,13 @@ _app.setupJoinModal = () => {
         const newRoomBtn = _app.joinModal.querySelector(".newroom-btn");
 
         if (joinForm && newRoomBtn) {
+            const serverField = joinForm.elements["serverAddress"];
             const roomIdField = joinForm.elements["roomId"];
             const playerNameField = joinForm.elements["playerName"];
+
+            if (serverField && _app.serverAddress) {
+                serverField.value = _app.serverAddress;
+            }
 
             if (roomIdField && _app.queryRoomId) {
                 roomIdField.value = _app.queryRoomId;
@@ -274,16 +286,26 @@ _app.setupJoinModal = () => {
             joinForm.addEventListener("submit", (event) => {
                 event.preventDefault();
 
-                if (playerNameField && roomIdField) {
+                if (serverField && playerNameField && roomIdField) {
+                    const ws = _app.setupWSS(serverField.value);
+                    _app.showJoinModal(false);
                     _app.playerName = playerNameField.value;
-                    _app.join(roomIdField.value);
+
+                    ws.addEventListener("open", () => {
+                        _app.join(roomIdField.value);
+                    });
                 }
             });
 
             newRoomBtn.addEventListener("click", () => {
-                if (playerNameField) {
+                if (serverField && playerNameField) {
+                    const ws = _app.setupWSS(serverField.value);
+                    _app.showJoinModal(false);
                     _app.playerName = playerNameField.value;
-                    _app.newRoom();
+
+                    ws.addEventListener("open", () => {
+                        _app.newRoom();
+                    });
                 }
             });
         }
@@ -352,7 +374,6 @@ _app.startUp = () => {
     }
     
     _app.readQueryParameters();
-    _app.setupWSS();
     _app.setupJoinModal();
     _app.showJoinModal(true);
     _app.updateStatusDisplay();
